@@ -1,7 +1,9 @@
-const utils = require('./utils');
+const user = require('./user');
+const customToken = require('./customToken');
 const accessToken = require('./accessToken');
 
 module.exports = {
-  ...utils,
+  ...user,
+  ...customToken,
   ...accessToken
 };

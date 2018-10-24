@@ -1,81 +1,69 @@
 // const speakeasy = require('speakeasy');
 // const QRCode = require('qrcode');
+const request = require('request');
 const { check, validationResult } = require('express-validator/check');
 const utils = require('./utils');
 // Config
-// const config = require('./config');
+const { RECAPTCHA_SECRET_KEY } = require('./config');
 
 module.exports = app => {
   app.post(
-    '/signup',
+    '/recaptcha/verify',
     [
-      check('email').isEmail(),
-      check('password').isLength({ min: 5 }),
-      check('passwordConfirmation')
+      check('grecaptcha')
         .exists()
-        .custom((value, { req }) => value === req.body.password)
-        .withMessage('passwordConfirmation field must have the same value as the password field')
+        .isLength({ min: 5 })
     ],
-    async (req, res) => {
+    (req, res) => {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(422).json({ errors: errors.array() });
-      }
-      const user = await utils.getUserByEmail(req.body.email);
-      if (user.exist) {
-        res.status(422).json({ code: 'ALREADY_EXIST' });
-        return Promise.resolve();
-      }
-
-      const userRecord = utils.createUser(req.body);
-      userRecord
-        .then(newUser => {
+        res.status(422).json({ errors: errors.array() });
+      } else {
+        const url = `https://www.google.com/recaptcha/api/siteverify?secret=${RECAPTCHA_SECRET_KEY}&response=${
+          req.body.grecaptcha
+        }&remoteip=${req.connection.remoteAddress}`;
+        request(url, (error, response, body) => {
+          const result = JSON.parse(body);
           res.status(200).json({
-            id: newUser.id
+            success: result.success
           });
-        })
-        .catch(error => res.status(422).json(error.errorInfo));
-
-      return Promise.resolve();
+        });
+      }
     }
   );
 
-  app.post(
-    '/login',
-    [check('email').isEmail(), check('password').isLength({ min: 5 })],
-    async (req, res) => {
+  app.post('/token', [check('email').isEmail()], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(422).json({ errors: errors.array() });
+    } else {
       const user = await utils.authenticate(req.body);
       if (user) {
-        const accessToken = utils.createAccessToken(user);
-        accessToken
-          .then(token => {
-            const ret = {
-              access_token: token.id,
-              needs_twofa: user.twofa.enabled
-            };
-            if (!user.twofa.enabled) {
-              utils
-                .createCustomAuthToken(user)
-                .then(customToken => {
-                  ret.auth_token = customToken;
-                  res.json(ret);
-                })
-                .catch(error => {
-                  res.status(422).json(error);
-                });
-            } else {
-              res.status(200).json(ret);
-            }
-          })
-          .catch(error => {
-            console.log(error);
-            res.status(422).json(error);
-          });
+        const accessToken = await utils.createAccessToken(user);
+        const ret = {
+          success: true,
+          access_token: accessToken,
+          needs_twofa: user.customClaims.twofa_enabled
+        };
+        if (!user.customClaims.twofa_enabled) {
+          // TODO: test purpose, este claim se deberia de asignar cuando en realidad se verifica el 2fa.
+          utils
+            .createCustomAuthToken(user)
+            .then(customToken => {
+              ret.custom_token = customToken;
+              res.json(ret);
+            })
+            .catch(error => {
+              res.status(422).json(error);
+            });
+        } else {
+          res.json(ret);
+        }
       } else {
-        res.status(422).send('Invalid email or password');
+        res.status(422).json({ message: 'Invalid email or password' });
       }
     }
-  );
+  });
 
   app.get('/2fa', [check('access_token').exists()], async (req, res) => {
     const errors = validationResult(req);
@@ -129,6 +117,6 @@ module.exports = app => {
   // });
 
   app.get('*', (req, res) => {
-    res.status(404).send({ message: 'Page not found' });
+    res.status(404).json({ message: 'Endpoint not found' });
   });
 };

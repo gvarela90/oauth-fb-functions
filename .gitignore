@@ -65,5 +65,7 @@ node_modules/
 .env
 
 functions/lib
+functions/src/config.js
 
 .vscode
+index.test.html

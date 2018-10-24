@@ -1,10 +1,10 @@
-const { admin, db } = require('../admin');
-
-const AccessToken = db.collection('access_tokens');
-const User = db.collection('users1');
+const jwt = require('jsonwebtoken');
+const { admin } = require('../admin');
+const { Users, AccessTokens } = require('../collections');
+const { JWT_SECRET } = require('../config');
 
 const createAccessToken = async user => {
-  const accessToken = await AccessToken.add({
+  const accessToken = await AccessTokens.add({
     user: {
       uid: user.uid,
       email: user.email
@@ -12,18 +12,23 @@ const createAccessToken = async user => {
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     clientId: ''
   });
-  return accessToken;
+
+  const jwtData = {
+    access_token: accessToken.id,
+    user: user.uid
+  };
+
+  return jwt.sign(jwtData, JWT_SECRET, { expiresIn: '10m' });
 };
 
-const getAccessToken = async accessToken => {
-  const accessTokenRef = await AccessToken.doc(accessToken).get();
+const getAccessToken = async uid => {
+  const accessTokenRef = await AccessTokens.doc(uid).get();
   if (accessTokenRef.exists) {
     const accessTokenData = {
       uid: accessTokenRef.id,
       ...accessTokenRef.data()
     };
-    console.log('accessTokenRef', accessTokenData);
-    const userRef = await User.doc(accessTokenData.user.uid).get();
+    const userRef = await Users.doc(accessTokenData.user.uid).get();
     if (userRef.exists) {
       accessTokenData.user = {
         uid: userRef.id,
