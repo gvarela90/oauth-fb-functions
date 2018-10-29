@@ -1,25 +1,84 @@
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { admin } = require('../admin');
 const { Users, AccessTokens } = require('../collections');
-const { JWT_SECRET } = require('../config');
+
+const ACCESS_TOKEN_STEPS = {
+  recaptcha: { recaptcha_verified: true },
+  password: { password_verified: true },
+  twofa: { twofa_verified: true }
+};
 
 const createAccessToken = async user => {
-  const accessToken = await AccessTokens.add({
+  const secret = crypto.randomBytes(20).toString('hex');
+  const data = {
     user: {
       uid: user.uid,
       email: user.email
     },
+    secret,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    clientId: ''
-  });
+    clientId: '',
+    loggedIn: false
+  };
+  const accessToken = await AccessTokens.add(data);
+  return {
+    uid: accessToken.id,
+    ...data
+  };
+};
 
+const getAccessJWT = (user, accessToken) => {
   const jwtData = {
-    access_token: accessToken.id,
+    access_token: accessToken.uid,
     user: user.uid
   };
 
-  return jwt.sign(jwtData, JWT_SECRET, { expiresIn: '10m' });
+  return jwt.sign(jwtData, accessToken.secret, { expiresIn: '10m', subject: user.email });
 };
+
+const updateAccessToken = async (uid, newData) => {
+  AccessTokens.doc(uid).update(newData);
+};
+
+const setRecaptchaStep = async uid => {
+  updateAccessToken(uid, ACCESS_TOKEN_STEPS.recaptcha);
+};
+
+const setPasswordStep = async uid => {
+  updateAccessToken(uid, ACCESS_TOKEN_STEPS.password);
+};
+
+const setTwofaStep = async uid => {
+  updateAccessToken(uid, ACCESS_TOKEN_STEPS.twofa);
+};
+
+const checkRecaptcha = accessToken => accessToken.recaptcha_verified === true;
+
+const checkRecaptchaAndPassword = accessToken =>
+  checkRecaptcha(accessToken) && accessToken.password_verified === true;
+
+const checkRecaptchaAndPasswordAndTwofa = accessToken =>
+  checkRecaptchaAndPassword(accessToken) && accessToken.twofa_verified === true;
+
+const decodeAndVerifyJWT = async (jwtoken, email) => {
+  const decodedJWT = jwt.decode(jwtoken);
+  const accessTokenRef = await AccessTokens.doc(decodedJWT.access_token).get();
+  const accessToken = {
+    uid: accessTokenRef.id,
+    ...accessTokenRef.data()
+  };
+  jwt.verify(jwtoken, accessToken.secret, { subject: email });
+  delete accessToken.secret;
+  const user = await admin.auth().getUser(decodedJWT.user);
+
+  return {
+    accessToken,
+    user
+  };
+};
+
+const alreadyLoggedIn = accessToken => accessToken.loggedIn === true;
 
 const getAccessToken = async uid => {
   const accessTokenRef = await AccessTokens.doc(uid).get();
@@ -46,5 +105,15 @@ const getAccessTokenInfo = async accessToken => {
 
 module.exports = {
   createAccessToken,
-  getAccessTokenInfo
+  setRecaptchaStep,
+  setPasswordStep,
+  setTwofaStep,
+  checkRecaptcha,
+  checkRecaptchaAndPassword,
+  checkRecaptchaAndPasswordAndTwofa,
+  updateAccessToken,
+  getAccessTokenInfo,
+  getAccessJWT,
+  decodeAndVerifyJWT,
+  alreadyLoggedIn
 };

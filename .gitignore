@@ -66,6 +66,7 @@ node_modules/
 
 functions/lib
 functions/src/config.js
+functions/src/local_tests
 
 .vscode
 index.test.html
