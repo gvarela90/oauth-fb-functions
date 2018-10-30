@@ -19,7 +19,8 @@ const createAccessToken = async user => {
     secret,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     clientId: '',
-    loggedIn: false
+    loggedIn: false,
+    ...ACCESS_TOKEN_STEPS.recaptcha
   };
   const accessToken = await AccessTokens.add(data);
   return {
@@ -38,19 +39,19 @@ const getAccessJWT = (user, accessToken) => {
 };
 
 const updateAccessToken = async (uid, newData) => {
-  AccessTokens.doc(uid).update(newData);
+  await AccessTokens.doc(uid).update(newData);
 };
 
 const setRecaptchaStep = async uid => {
-  updateAccessToken(uid, ACCESS_TOKEN_STEPS.recaptcha);
+  await updateAccessToken(uid, ACCESS_TOKEN_STEPS.recaptcha);
 };
 
 const setPasswordStep = async uid => {
-  updateAccessToken(uid, ACCESS_TOKEN_STEPS.password);
+  await updateAccessToken(uid, ACCESS_TOKEN_STEPS.password);
 };
 
 const setTwofaStep = async uid => {
-  updateAccessToken(uid, ACCESS_TOKEN_STEPS.twofa);
+  await updateAccessToken(uid, ACCESS_TOKEN_STEPS.twofa);
 };
 
 const checkRecaptcha = accessToken => accessToken.recaptcha_verified === true;
@@ -71,7 +72,6 @@ const decodeAndVerifyJWT = async (jwtoken, email) => {
   jwt.verify(jwtoken, accessToken.secret, { subject: email });
   delete accessToken.secret;
   const user = await admin.auth().getUser(decodedJWT.user);
-
   return {
     accessToken,
     user
