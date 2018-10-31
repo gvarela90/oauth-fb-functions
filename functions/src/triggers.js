@@ -1,32 +1,12 @@
-const { db, admin } = require('./admin');
+/* eslint no-console: ["error", { allow: ["warn", "error"] }] */
+const { admin } = require('./admin');
+const { UserProfiles } = require('./collections');
 
 const createProfile = userRecord =>
-  db
-    .collection('users')
-    .doc(userRecord.uid)
-    .set({
-      email: userRecord.email,
-      twofa: {
-        enabled: false,
-        verified: false
-      },
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    })
-    .catch(console.error);
-
-const createAuthUser = snap => {
-  const newValue = snap.data();
-  return admin
-    .auth()
-    .createUser({
-      uid: snap.id,
-      email: newValue.email,
-      password: 'password'
-    })
-    .catch(console.error);
-};
+  UserProfiles.doc(userRecord.uid)
+    .set({ createdAt: admin.firestore.FieldValue.serverTimestamp() })
+    .catch(err => console.error(err));
 
 module.exports = {
-  createProfile,
-  createAuthUser
+  createProfile
 };

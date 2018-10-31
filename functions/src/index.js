@@ -20,6 +20,5 @@ require('./routes')(app);
 
 module.exports = {
   auth: api,
-  userOnCreate: functions.firestore.document('users/{userId}').onCreate(triggers.createAuthUser)
-  // authOnCreate: functions.auth.user().onCreate(triggers.createProfile)
+  authOnCreate: functions.auth.user().onCreate(triggers.createProfile)
 };

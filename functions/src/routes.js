@@ -1,10 +1,7 @@
-// const speakeasy = require('speakeasy');
-// const QRCode = require('qrcode');
-const request = require('request-promise');
+const rp = require('request-promise');
 const { check } = require('express-validator/check');
 const utils = require('./utils');
 const { authenticated, validate } = require('./middlewares');
-// Config
 const { RECAPTCHA_SECRET_KEY } = require('./config');
 
 module.exports = app => {
@@ -20,15 +17,22 @@ module.exports = app => {
     ],
     validate,
     (req, res) => {
-      const url = `https://www.google.com/recaptcha/api/siteverify?secret=${RECAPTCHA_SECRET_KEY}&response=${
-        req.body.grecaptcha
-      }&remoteip=${req.connection.remoteAddress}`;
-      const promises = [request(url), utils.getUserByEmail(req.body.email)];
+      const requestOptions = {
+        method: 'POST',
+        uri: 'https://www.google.com/recaptcha/api/siteverify',
+        form: {
+          secret: RECAPTCHA_SECRET_KEY,
+          response: req.body.grecaptcha,
+          remoteip: req.connection.remoteAddress
+        },
+        json: true
+      };
+      const promises = [rp(requestOptions), utils.getUserByEmail(req.body.email)];
       const result = {};
 
       Promise.all(promises)
         .then(async results => {
-          const response = JSON.parse(results[0]);
+          const response = results[0];
           const user = results[1];
           result.success = response.success;
           if (result.success && user) {
@@ -37,7 +41,10 @@ module.exports = app => {
           }
           res.status(200).json(result);
         })
-        .catch(() => res.status(200).json({ success: false }));
+        .catch(err => {
+          console.error(err);
+          res.status(200).json({ success: false });
+        });
     }
   );
 

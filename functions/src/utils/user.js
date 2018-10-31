@@ -1,3 +1,5 @@
+/* eslint no-console: ["error", { allow: ["warn", "error"] }] */
+
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
 const { admin } = require('../admin');
@@ -38,7 +40,7 @@ const verifyOTP = (secret, otpToken) =>
 
 const twofaSetup = async user => {
   const options = {
-    name: GOOGLE_AUTHENTICATOR_NAME,
+    name: `${GOOGLE_AUTHENTICATOR_NAME} - ${user.mail}`,
     length: 64
   };
   const secret = speakeasy.generateSecret(options);
@@ -55,7 +57,9 @@ const twofaSetup = async user => {
             otpURL: secret.otpauth_url
           });
         })
-        .catch(err => console.error(err));
+        .catch(err => {
+          console.error(err);
+        });
     });
   });
 };
