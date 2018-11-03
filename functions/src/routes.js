@@ -138,7 +138,11 @@ module.exports = app => {
         (!needsTwofa && utils.checkRecaptchaAndPassword(accessToken)) ||
         (needsTwofa && utils.checkRecaptchaAndPasswordAndTwofa(accessToken))
       ) {
-        const customToken = await utils.createCustomAuthToken(user);
+        let claims;
+        if (needsTwofa) {
+          claims = { twofa_verified: true };
+        }
+        const customToken = await utils.createCustomAuthToken(user, claims);
         res.json({
           success: true,
           custom_token: customToken
