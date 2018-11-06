@@ -2,17 +2,17 @@
 
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
-const { admin } = require('../admin');
+const { admin, firebase } = require('../admin');
 const { GOOGLE_AUTHENTICATOR_NAME } = require('../config');
 const { UserProfiles } = require('../collections');
 
-const authenticate = async ({ email }) => {
+const getUserByEmail = async email => {
   const user = await admin.auth().getUserByEmail(email);
   return user;
 };
 
-const getUserByEmail = async email => {
-  const user = await admin.auth().getUserByEmail(email);
+const signInWithEmailAndPassword = async (email, password) => {
+  const user = await firebase.auth().signInWithEmailAndPassword(email, password);
   return user;
 };
 
@@ -40,7 +40,7 @@ const verifyOTP = (secret, otpToken) =>
 
 const twofaSetup = async user => {
   const options = {
-    name: `${GOOGLE_AUTHENTICATOR_NAME} - ${user.mail}`,
+    name: `${GOOGLE_AUTHENTICATOR_NAME} - ${user.email}`,
     length: 64
   };
   const secret = speakeasy.generateSecret(options);
@@ -85,12 +85,12 @@ const disableTwofa = async user => {
 };
 
 module.exports = {
-  authenticate,
   getUserByEmail,
   needsTwofa,
   verifyOTP,
   twofaSetup,
   enableTwofa,
   disableTwofa,
-  getUserProfile
+  getUserProfile,
+  signInWithEmailAndPassword
 };

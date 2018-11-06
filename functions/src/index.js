@@ -1,24 +1,12 @@
 const functions = require('firebase-functions');
-const cors = require('cors');
-const express = require('express');
+const controllers = require('./controllers');
 
 const triggers = require('./triggers');
 
-/* Express with CORS & automatic trailing '/' solution */
-const app = express();
-app.use(cors());
-
-// not as clean, but a better endpoint to consume
-const api = functions.https.onRequest((request, response) => {
-  if (!request.path) {
-    request.url = `/${request.url}`; // prepend '/' to keep query params if any
-  }
-  return app(request, response);
-});
-
-require('./routes')(app);
-
 module.exports = {
-  auth: api,
-  authOnCreate: functions.auth.user().onCreate(triggers.createProfile)
+  authOnCreate: functions.auth.user().onCreate(triggers.createProfile),
+  login: functions.https.onRequest(controllers.login),
+  getSetUp2fa: functions.https.onRequest(controllers.getSetUp2fa),
+  postSetUp2fa: functions.https.onRequest(controllers.postSetUp2fa),
+  deleteSetUp2fa: functions.https.onRequest(controllers.deleteSetUp2fa)
 };

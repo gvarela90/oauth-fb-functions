@@ -11,13 +11,7 @@ const verifyIdToken = async idToken => {
   return token;
 };
 
-const isPasswordToken = async idToken => {
-  const decodedToken = await verifyIdToken(idToken);
-  return decodedToken.firebase.sign_in_provider === 'password';
-};
-
 module.exports = {
   createCustomAuthToken,
-  verifyIdToken,
-  isPasswordToken
+  verifyIdToken
 };
