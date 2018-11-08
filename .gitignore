@@ -65,7 +65,7 @@ node_modules/
 .env
 
 functions/lib
-functions/src/config.js
+functions/src/config.ts
 functions/src/local_tests
 
 .vscode
