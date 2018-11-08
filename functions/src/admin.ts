@@ -1,6 +1,6 @@
-const admin = require('firebase-admin');
-const firebase = require('firebase');
-const config = require('./config');
+import * as admin from "firebase-admin";
+const firebase = require("firebase");
+import config from "./config";
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -16,8 +16,4 @@ db.settings({
   timestampsInSnapshots: true
 });
 
-module.exports = {
-  db,
-  admin,
-  firebase
-};
+export { db, admin, firebase };

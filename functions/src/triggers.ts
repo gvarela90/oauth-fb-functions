@@ -1,12 +1,11 @@
 /* eslint no-console: ["error", { allow: ["warn", "error"] }] */
-const { admin } = require('./admin');
-const { UserProfiles } = require('./collections');
+import { admin } from "./admin";
+import { UserProfiles } from "./collections";
 
-const createProfile = userRecord =>
+const createProfile = (userRecord: admin.auth.UserRecord): void => {
   UserProfiles.doc(userRecord.uid)
     .set({ createdAt: admin.firestore.FieldValue.serverTimestamp() })
     .catch(err => console.error(err));
-
-module.exports = {
-  createProfile
 };
+
+export { createProfile };

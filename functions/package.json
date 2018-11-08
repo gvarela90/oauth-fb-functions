@@ -2,13 +2,13 @@
   "name": "functions",
   "description": "Cloud Functions for Firebase",
   "scripts": {
-    "lint": "eslint ./src",
+    "lint": "tslint --project tsconfig.json",
     "node-dev": "node ./src/server.js",
     "serve": "npm run build && firebase serve --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "build": "babel src --out-dir lib",
+    "build": "tslint -p tslint.json && tsc",
     "logs": "firebase functions:log"
   },
   "main": "lib/index.js",
@@ -25,13 +25,8 @@
     "@babel/cli": "^7.1.2",
     "@babel/core": "^7.1.2",
     "@babel/preset-env": "^7.1.0",
-    "eslint": "^4.19.1",
-    "eslint-config-airbnb-base": "^13.1.0",
-    "eslint-config-prettier": "^3.1.0",
-    "eslint-plugin-import": "^2.14.0",
-    "eslint-plugin-prettier": "^3.0.0",
-    "eslint-plugin-promise": "^3.6.0",
-    "prettier": "^1.14.3"
+    "tslint": "~5.8.0",
+    "typescript": "~2.8.3"
   },
   "private": true
 }
