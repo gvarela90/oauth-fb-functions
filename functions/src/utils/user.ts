@@ -14,11 +14,11 @@ const getUserByEmail = async (
   return user;
 };
 
-const signInWithEmailAndPassword = async (email: string, password: string) => {
-  const user = await firebase
-    .auth()
-    .signInWithEmailAndPassword(email, password);
-  return user;
+const signInWithEmailAndPassword = async (
+  email: string,
+  password: string
+): Promise<void> => {
+  await firebase.auth().signInWithEmailAndPassword(email, password);
 };
 
 const getUserProfile = async (
